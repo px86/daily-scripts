@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""Split a given album file into multiple tracks using ffmpeg."""
+from sys import argv
+from os import system
+
+
+def read_lines(filename):
+    """Read non-empty and non-commented lines from given filename."""
+    lines = []
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.strip()
+            if len(line) != 0 and line[0] != '#':
+                lines.append(line)
+            else:
+                pass
+    return lines
+
+
+def make_output_file_name(title, extention):
+    """Generate output file name from the title of the track."""
+    output_file_name = ""
+    for idx, char in enumerate(title):
+        if char in ",.:(){}[] `~'":
+            output_file_name += '_'
+        else:
+            output_file_name += char
+
+    output_file_name += extention
+    return output_file_name
+
+
+def get_extention(filename):
+    """Extract file name extention."""
+    extention = ''
+    for i in range(len(filename)-1, 0, -1):
+        if filename[i] == '.':
+            extention = filename[i::]
+
+    return extention
+
+
+def make_cmd_strings(lines, extention):
+    """Generate command strings for each line."""
+    cmd_strs = []
+    tokens = []
+    for line in lines:
+        tokens.append([token.strip() for token in line.split("|")])
+    for i in range(len(tokens)):
+        cmd_str = f"ffmpeg -i {argv[1]} "
+        cmd_str += f" -ss {tokens[i][0]} "
+        if i != len(tokens)-1:
+            cmd_str += f"-to {tokens[i+1][0]} "
+        cmd_str += f"-metadata title='{tokens[i][1]}' "
+        if len(tokens[i][2]):
+            cmd_str += f" -metadata artist='{tokens[i][2]}' "
+        cmd_str += make_output_file_name(tokens[i][1], extention)
+
+        cmd_strs.append(cmd_str)
+
+    return cmd_strs
+
+
+if __name__ == "__main__":
+    if len(argv) != 3:
+        print(f"Usage: {argv[0]} AUDIOFILE TIMESTAMPFILE")
+        exit(1)
+
+    lines = read_lines(argv[2])
+    extn = get_extention(argv[1])
+    cmd_strs = make_cmd_strings(lines, extn)
+
+    for cmd_str in cmd_strs:
+        print(cmd_str)
+        system(cmd_str)

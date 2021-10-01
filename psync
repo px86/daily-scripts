@@ -1,0 +1,42 @@
+#!/bin/sh
+
+#--------------------------------------------------------------------------
+
+sync_list="$(xdg-user-dir RESOURCES)/sync.csv"
+
+#--------------------------------------------------------------------------
+
+
+if ! [ -f "$sync_list" ]
+then
+    printf "File '%s' not found.\n" $sync_list
+    exit 1
+fi
+
+cd ~
+
+remote_ip=$(/sbin/arp | fzf --height=15 --reverse --tac | cut -d' ' -f1)
+
+if [ -z "$remote_ip" ]
+then
+    printf "Remote IP address not found.\n"
+    exit 1
+fi
+
+sed '/^#/d;/^$/d'  $sync_list | column -s',' -t | \
+while read remote_path local_path is_circular
+do
+    if [ "$is_circular" = "false" ]
+    then
+	rsync -e "ssh -p 8022 -o 'StrictHostKeyChecking=no'" \
+	      -aP $remote_ip:"$remote_path" "$local_path"
+    else
+	rsync -e "ssh -p 8022 -o 'StrictHostKeyChecking=no'" \
+	      -aP $remote_ip:"$remote_path" "$local_path"
+
+	rsync -e "ssh -p 8022 -o 'StrictHostKeyChecking=no'" \
+	      -aP "$local_path" $remote_ip:"$remote_path"
+    fi
+done
+
+printf "\nFinished\n"

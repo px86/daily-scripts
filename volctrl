@@ -1,0 +1,58 @@
+#!/bin/sh
+
+#---------------------------------------------------------------------------
+
+icons_dir="$(xdg-user-dir RESOURCES)/icons"
+
+#---------------------------------------------------------------------------
+
+vol_notify()
+{
+    icon="$icons_dir"/volume.png
+    dunstify --icon=$icon \
+	     --replace=301 \
+	     "Volume" \
+	     "$(pulsemixer --get-volume \
+	        | awk '{if ($1 == $2) printf "%s%%", $1; \
+	     	       else printf "Left  %s%%\nRight %s%%", $1, $2;}')" &
+}
+
+mute_notify()
+{
+    icon="$icons_dir"/mute.png
+    dunstify -i "$icon" -r 301 "Volume" "<b>muted</b>" &
+}
+
+case "$1" in
+    up)
+	pulsemixer --change-volume +2
+	vol_notify
+	;;
+
+    down)
+	pulsemixer --change-volume -2
+	vol_notify
+	;;
+
+    mute)
+	pulsemixer --mute
+	mute_notify
+	;;
+
+    unmute)
+	pulsemixer --unmute
+	vol_notify
+	;;
+
+    toggle)
+	pulsemixer --toggle-mute
+	if [ $(pulsemixer --get-mute) -eq 1 ]; then
+	    mute_notify
+	else 
+	    vol_notify
+	fi
+	;;
+    
+    *)
+	;;
+esac

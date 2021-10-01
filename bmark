@@ -1,0 +1,11 @@
+#!/bin/sh
+
+BOOKMARKS=~/.local/data/bookmarks
+
+column -s'|' -t "$BOOKMARKS" | fzf -m | sed 's/\s.*//' | \
+while read CHOICE; do
+	if [ -n "$CHOICE" ]; then
+		$BROWSER --new-tab "$CHOICE" > /dev/null 2>&1 &
+	fi
+done 
+

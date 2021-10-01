@@ -1,0 +1,13 @@
+#!/bin/sh
+
+remote_ip=$(/sbin/arp | fzf --height=15 --reverse --tac | cut -d' ' -f1)
+
+if [ -z "$remote_ip" ]
+then
+    printf "Remote IP address not found.\n" 
+    exit 1
+fi
+
+printf "Connecting to: %s ...\n" $remote_ip
+
+exec ssh -p 8022 -o 'StrictHostKeyChecking=no' $remote_ip 

@@ -1,0 +1,28 @@
+#!/bin/sh
+
+#---------------------------------------------------------------------------
+
+icon="$(xdg-user-dir RESOURCES)/icons/brightness.png"
+
+#---------------------------------------------------------------------------
+
+send_notification()
+{
+    brightness=$(brightnessctl -c backlight -m | cut -d',' -f4)
+    dunstify -i "$icon" -r "77" "Brightness" "$brightness" &
+}
+
+case "$1" in
+    up)
+	brightnessctl --class=backlight --quiet set 1%+
+	send_notification
+	;;
+    
+    down)
+	brightnessctl --class=backlight --quiet set 1%-
+	send_notification
+	;;
+
+    *)
+	;;
+esac

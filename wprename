@@ -1,0 +1,31 @@
+#!/bin/sh
+
+#---------------------------------------------------------------------------
+
+wallpapers_dir="$(xdg-user-dir PICTURES)"/Wallpapers
+
+#---------------------------------------------------------------------------
+
+# rename all files in `wallpapers_dir` serially
+
+[ -z "$wallpapers_dir" ] && exit 1
+cd $wallpapers_dir || exit 1
+
+count=1
+
+for file_name in *
+do
+    extention=${file_name##*\.}
+
+    # skip if `file_name` has no extention
+    [ -z "$extention" ] && continue
+
+    new_file_name="$count.$extention"
+    count=$((count+1))
+
+    cmd_str="mv $file_name $new_file_name"
+    echo "$cmd_str"
+    eval "$cmd_str"
+
+done
+

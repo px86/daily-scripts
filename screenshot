@@ -1,0 +1,24 @@
+#!/bin/sh
+
+#---------------------------------------------------------------------------
+
+screenshots_dir="$(xdg-user-dir PICTURES)"/Screenshots
+file_name=$(date +"%s").png
+icon="$(xdg-user-dir RESOURCES)/icons/screenshot.png"
+
+#---------------------------------------------------------------------------
+
+if ! [ -d "$screenshots_dir" ]
+then
+    mkdir -p $screenshots_dir || screenshot_dir="$HOME"
+fi
+
+if [ "$1" = "-s" ]
+then
+    maim -u -s "$screenshots_dir/$file_name"
+else
+    maim -u "$screenshots_dir/$file_name"
+fi
+
+dunstify -i $icon "Screenshot taken" "saved in $screenshots_dir" &
+

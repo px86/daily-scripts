@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# fnn - File Name Normalizer
+
+IFS=$'\n'
+
+getExtention () {
+    local filename=$@
+    local ext=${filename##*\.}
+    if ! [ "$ext" = "$filename" ]
+    then
+	printf '.%s' $ext
+    fi
+}
+
+while read old_filename
+do
+    ext=$(getExtention "$old_filename")
+    fn=${old_filename%\.*}
+    fn=$(printf '%s' "$fn" | tr -dc ' _\-.a-zA-Z0-9' | tr -s ' .-' '___')
+    new_filename="$fn$ext"
+
+    [ "$new_filename" = "$old_filename" ] && continue;
+
+    command_str=$(printf "mv  '%s'  '%s'" "$old_filename" "$new_filename")
+    printf '%s\n' "$command_str"
+
+    [ "$1" = "--dry-run" ] && continue;
+
+    eval "$command_str"
+done
+
