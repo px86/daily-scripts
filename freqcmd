@@ -1,0 +1,21 @@
+#!/usr/bin/bash
+
+# Present a list of frequently run commands through dmenu, and execute it.
+
+oldIFS=$IFS
+IFS=$'\n'
+
+declare -a commands
+commands=(
+    "xmodmap ~/.config/X11/xmodmaprc"
+    "~/.config/X11/touchpad.sh"
+    "chromium ~/.local/share/doc/xlib/index.html"
+    "chromium ~/.local/share/doc/glfw3/index.html"
+)
+
+eval $(for command in ${commands[@]}
+do
+    printf "%s\n" $command
+done | dmenu -i)
+
+IFS=$oldIFS

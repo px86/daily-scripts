@@ -1,12 +1,12 @@
 #!/bin/sh
 
-#---------------------------------------------------------------------------
+# Dependencies:
+# 1. maim  - the program that captures screensots
+# 2. dunst - notification program
 
-screenshots_dir="$(xdg-user-dir PICTURES)"/Screenshots
+screenshots_dir="$HOME"/Pictures/Screenshots
 file_name=$(date +"%s").png
-icon="$(xdg-user-dir RESOURCES)/icons/screenshot.png"
-
-#---------------------------------------------------------------------------
+icon="$XDG_CONFIG_HOME"/dunst/icons/screenshot.png
 
 if ! [ -d "$screenshots_dir" ]
 then
@@ -20,5 +20,4 @@ else
     maim -u "$screenshots_dir/$file_name"
 fi
 
-dunstify -i $icon "Screenshot taken" "saved in $screenshots_dir" &
-
+dunstify -i $icon "Screenshot Taken" &

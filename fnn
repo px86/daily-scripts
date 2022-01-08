@@ -5,11 +5,11 @@
 IFS=$'\n'
 
 getExtention () {
-    local filename=$@
+    local filename="$@"
     local ext=${filename##*\.}
     if ! [ "$ext" = "$filename" ]
     then
-	printf '.%s' $ext
+	printf ".%s" "$ext"
     fi
 }
 

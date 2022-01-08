@@ -1,11 +1,13 @@
 #!/bin/sh
 
-BOOKMARKS=~/.local/data/bookmarks
+# Dependencies:
+# 1. dmenu
+# 2. BROWSER environment variable
 
-column -s'|' -t "$BOOKMARKS" | fzf -m | sed 's/\s.*//' | \
-while read CHOICE; do
-	if [ -n "$CHOICE" ]; then
-		$BROWSER --new-tab "$CHOICE" > /dev/null 2>&1 &
-	fi
-done 
+bookmarks_file="$HOME"/.local/data/bookmarks
 
+url=$(column -s'|' -t "$bookmarks_file" | dmenu -i -c -p "Visit in ${BROWSER}" -l 15 | sed 's/\s.*//')
+
+if [ -n "$url" ]; then
+    $BROWSER --new-tab "$url" > /dev/null 2>&1 &
+fi

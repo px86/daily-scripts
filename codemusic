@@ -1,4 +1,0 @@
-#!/bin/sh
-
-url="https://coderadio-relay-blr.freecodecamp.org/radio/8010/radio.mp3"
-mpv $url
