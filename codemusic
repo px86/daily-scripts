@@ -1,0 +1,4 @@
+#!/bin/sh
+
+pkill -9 mpv
+mpv "https://coderadio-relay-blr.freecodecamp.org/radio/8010/low.mp3"

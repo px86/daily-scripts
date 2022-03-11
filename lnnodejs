@@ -1,0 +1,12 @@
+#!/bin/sh
+
+node_ver=$(ls /opt | grep 'node' | fzf)
+[ -z "$node_ver" ] && return 1
+
+path="/opt/"$node_ver
+
+for item in $(ls $path/bin)
+do
+    echo "symlinking $item"
+    ln -sf "$path/bin/$item" ~/.local/bin/$item
+done
