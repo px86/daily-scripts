@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# Makes (and removes) symbolic links of executables present in DIR or DIR/bin
+# to '$bin_dir'. Useful for installing software manually in places like '/opt'.
+#
+# Example:
+# for installing and linking nodejs
+#     1. Download and extract nodejs.zip into /opt/node-vXX.XX.X-linux-x64
+#     2. Run: linkex /opt/node-vXX.XX.X-linux-x64
+#     3. To Unlink: linkex --unlink /opt/node-vXX.XX.X-linux-x64
+#
+
+bin_dir="$HOME/.local/bin"
+
+if [ $# -eq 0 ];
+then
+    printf 'Usage: linkex DIR [DIR...]\n'
+    exit 1
+fi
+
+# Options
+dry_run=0
+unlink=0
+
+function symlink_executables_in_dir {
+    # iterate over directory contents
+    for f in "$1"/*;
+    do
+	# filter out executable files
+	if [ -f "$f" ] && [ -x "$f" ];
+	then
+	    basename=$(basename "$f")
+	    printf 'symlink: %s -> \e[32m %s \e[0m \n' "$f" "$basename"
+	    [ "$dry_run" -eq 0 ] && ln -sf "$f" "$bin_dir/$basename"
+	fi
+    done
+}
+
+function unlink_executables_in_dir {
+    # iterate over directory contents
+    for f in "$1"/*;
+    do
+	# filter out executable files
+	if [ -f "$f" ] && [ -x "$f" ];
+	then
+	    basename=$(basename "$f")
+	    expected_link="$bin_dir/$basename"
+	    if [ -h "$expected_link" ];
+	    then
+		printf 'unlink: %s -> \e[31m %s \e[0m \n' "$f" "$basename"
+		[ "$dry_run" -eq 0 ] && rm "$expected_link"
+	    fi
+	fi
+    done
+}
+
+for arg in "$@";
+do
+    [ "$arg" = '--dry-run' ] && dry_run=1 && continue
+    [ "$arg" = '--unlink' ] && unlink=1 && continue
+
+    [ -d "$arg" ] || continue
+
+    realpath=$(realpath "$arg")
+
+    if [ "$unlink" -eq 0 ];
+    then
+	symlink_executables_in_dir "$realpath"
+	[ -d "$realpath/bin" ] && symlink_executables_in_dir "$realpath/bin"
+    else
+	unlink_executables_in_dir "$realpath"
+	[ -d "$realpath/bin" ] && unlink_executables_in_dir "$realpath/bin"
+    fi
+done

@@ -1,13 +1,26 @@
 #!/bin/sh
-
-# Dependencies:
+#
+# Visit bookmarks using dmenu.
+#
+# DEPENDENCIES:
 # 1. dmenu
 # 2. BROWSER environment variable
+#
 
-bookmarks_file="$HOME"/.local/data/bookmarks
+bookmark_file="$HOME"/.local/data/bookmarks
 
-url=$(column -s'|' -t "$bookmarks_file" | dmenu -i -c -p "Visit in ${BROWSER}" -l 15 | sed 's/\s.*//')
+[ -f "$bookmark_file" ] || exit 1
 
-if [ -n "$url" ]; then
-    $BROWSER --new-tab "$url" > /dev/null 2>&1 &
-fi
+url=$(column -s'|' -t "$bookmark_file" | dmenu -i -c -p "Visit in ${BROWSER}" -l 15 | sed 's/.*\s//')
+
+[ -n "$url" ] || exit 1
+
+case "$1" in
+    --app|-a)
+	# Works with chromium based browsers
+	$BROWSER --app="$url" > /dev/null 2>&1 &
+	;;
+    *)
+	$BROWSER --new-tab "$url" > /dev/null 2>&1 &
+	;;
+esac
