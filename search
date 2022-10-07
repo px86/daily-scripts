@@ -1,0 +1,18 @@
+#!/bin/bash
+
+query=$(printf "" | dmenu -p "Query")
+query_string=$(echo "$query" | sed 's/ /%20/g')
+[ -z "$query_string" ] && exit 1
+
+declare -A sites
+
+sites["youtube"]="https://www.youtube.com/results?search_query=${query_string}"
+sites["wikipedia"]="https://en.wikipedia.org/wiki/Special:Search?search=${query_string}"
+sites["b-ok.asia"]="https://b-ok.asia/s/${query_string}"
+sites["google"]="https://www.google.com/search?q=${query_string}"
+sites["duckduckgo"]="https://duckduckgo.com/?q=${query_string}"
+sites["merriam-webster"]="https://www.merriam-webster.com/dictionary/${query_string}"
+
+site=$(for key in "${!sites[@]}";do echo "$key"; done | dmenu -p "Search on")
+
+${BROWSER:-firefox} --new-tab "${sites[$site]}" > /dev/null 2>&1 &
