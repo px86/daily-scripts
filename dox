@@ -1,13 +1,31 @@
 #!/bin/sh
 
 # Dependencies:
-# 1. dmenu
+# 1. fzf
 # 2. READER environment variable
 
-documents_dir="$HOME"/Documents
-
+documents_dir="$(xdg-user-dir DOCUMENTS)"
 cd "$documents_dir" || exit 1
 
-document=$(find -type f -iname '*.pdf' | sed 's,^\./,,1' | dmenu -i -c -p "Open in ${READER}" -l 15)
+[ -n "$READER" ] || exit 1
+prompt="Open in ${READER}"
 
-[ -n "$document" ] && $READER "$document" &
+if [ "$1" = "-r" ]; then
+
+    document=$(find -type f -iname '*.pdf' | sed 's,^\./,,1' \
+	           | rofi -dmenu -l25 -i -p "$prompt")
+
+else
+
+    document=$(find -type f -iname '*.pdf' | sed 's,^\./,,1' \
+	           | fzf --layout=reverse \
+		         --prompt "$prompt  > " \
+		         --border=rounded \
+		         --scheme=path)
+
+fi
+
+if [ -n "$document" ]; then
+    nohup $READER "$document" > /dev/null 2>&1 < /dev/null &
+    sleep 0.05
+fi

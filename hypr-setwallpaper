@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+if [ "$#" -eq 0 ]; then
+    echo "Usage: $0 IMAGE"
+    exit 1
+fi
+
+image="$1"
+wallpaper="$HOME/.local/data/wallpaper"
+
+# copy the image to wallpaper
+cp -f "$image" "$wallpaper"
+
+# unload all preloaded images
+hyprctl hyprpaper unload all
+
+# preload image
+hyprctl hyprpaper preload "$wallpaper"
+
+for (( i=5; i>0; i-- ))
+do
+    if [[ "$wallpaper" = $(hyprctl hyprpaper listloaded) ]]
+    then
+        for monitor in $(hyprctl monitors | awk '/^Monitor .+ \(ID [0-9]+\):$/ {print $2}')
+        do
+            hyprctl hyprpaper wallpaper "$monitor, $wallpaper"
+        done
+
+        sleep 2
+        hyprctl hyprpaper unload all
+
+        exit 0
+    else
+        sleep 1
+    fi
+done
+
+exit 1

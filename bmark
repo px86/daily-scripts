@@ -1,26 +1,39 @@
 #!/bin/sh
-#
-# Visit bookmarks using dmenu.
-#
+
 # DEPENDENCIES:
-# 1. dmenu
+# 1. fzf
 # 2. BROWSER environment variable
-#
 
-bookmark_file="$HOME"/.local/data/bookmarks
+bookmark_file="$HOME/.local/data/bookmarks"
 
-[ -f "$bookmark_file" ] || exit 1
+if ! [ -f "$bookmark_file" ]; then
+	printf "Error: file not found '%s'\n" "$bookmark_file"
+	exit 1
+fi
 
-url=$(column -s'|' -t "$bookmark_file" | dmenu -i -c -p "Visit in ${BROWSER}" -l 15 | sed 's/.*\s//')
+if [ -z "$BROWSER" ]; then
+	printf "Error: BROWSER environment variable is not set\n"
+	exit 1
+fi
 
-[ -n "$url" ] || exit 1
+prompt="Visit in ${BROWSER}"
 
-case "$1" in
-    --app|-a)
-	# Works with chromium based browsers
-	$BROWSER --app="$url" > /dev/null 2>&1 &
-	;;
-    *)
-	$BROWSER --new-tab "$url" > /dev/null 2>&1 &
-	;;
-esac
+if [ "$1" = "-r" ]; then
+    url=$(column -s'|' -t "$bookmark_file" \
+	      | rofi -dmenu -l25 -i  -p "$prompt" \
+	      | sed 's/.*\s//')
+
+else
+
+url=$(column -s'|' -t "$bookmark_file" \
+	  | fzf --prompt "$prompt > " \
+		--layout=reverse \
+		--border=rounded \
+	  | sed 's/.*\s//')
+
+fi
+
+if [ -n "$url" ]; then
+    nohup $BROWSER --new-tab "$url" > /dev/null 2>&1 < /dev/null &
+    sleep 0.05
+fi

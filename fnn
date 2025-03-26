@@ -1,32 +1,199 @@
-#!/bin/sh
+#!/usr/bin/env python3
+import re
+import argparse
+import sys
+import os
+from pprint import pprint
+from typing import Literal, List, Dict
 
-# fnn - File Name Normalizer
 
-IFS=$'\n'
+def transform(
+    filename: str,
+    joinwith: str,
+    case: Literal["lower", "title", "upper"],
+    replacements: Dict[str, str] = None,
+    prefix: str | None = None,
+    suffix: str | None = None,
+    pre_remove: str | None = None,
+    post_remove: str | None = None,
+) -> str:
+    """Transform the given filename."""
+    if case == "title":
+        func = str.title
+    elif case == "upper":
+        func = str.upper
+    elif case == "skip":
+        func = lambda s: s
+    else:
+        func = str.lower
 
-getExtention () {
-    local filename="$@"
-    local ext=${filename##*\.}
-    if ! [ "$ext" = "$filename" ]
-    then
-	printf ".%s" "$ext"
-    fi
-}
+    # remove single quote, unconditionally
+    filename = filename.replace("'", "")
 
-while read old_filename
-do
-    ext=$(getExtention "$old_filename")
-    fn=${old_filename%\.*}
-    fn=$(printf '%s' "$fn" | tr -dc ' _\-.a-zA-Z0-9' | tr -s ' .-' '___')
-    new_filename="$fn$ext"
+    if pre_remove is not None:
+        filename = re.sub(pre_remove, "", filename)
 
-    [ "$new_filename" = "$old_filename" ] && continue;
+    if replacements is not None:
+        for sym, rep in replacements.items():
+            filename = filename.replace(sym, rep)
 
-    command_str=$(printf "mv  '%s'  '%s'" "$old_filename" "$new_filename")
-    printf '%s\n' "$command_str"
+    dot = filename.rfind(".")
+    if dot != -1:
+        extn = filename[dot::]
+        filename = filename[:dot]
+    newfilename = joinwith.join(
+        [func(s) for s in re.split(r"[\W_]+", filename) if s not in ("_", "-")]
+    ).strip(joinwith)
 
-    [ "$1" = "--dry-run" ] && continue;
+    if suffix is not None and not newfilename.endswith(suffix):
+        newfilename = newfilename + suffix
+    if prefix is not None and not newfilename.startswith(prefix):
+        newfilename = prefix + newfilename
 
-    eval "$command_str"
-done
+    if post_remove is not None:
+        newfilename = re.sub(post_remove, "", newfilename)
 
+    if dot != -1:
+        newfilename = newfilename + extn
+    return newfilename
+
+
+def read_filenames() -> List[str]:
+    """Read filenames from stdin."""
+    filenames = []
+    for line in sys.stdin:
+        sline = line.strip()
+        if len(sline):
+            filenames.append(sline)
+    return filenames
+
+
+def generate_filenames(
+    filepaths: List[str],
+    joinwith: str,
+    case: str,
+    suffix: str | None = None,
+    prefix: str | None = None,
+    pre_remove: str | None = None,
+    post_remove: str | None = None,
+    replacements: Dict[str, str] = {"$": "S", "&": " and "},
+) -> Dict[str, str]:
+    """Generate new names for all files."""
+    name_map = dict()
+    # oldfilepaths = [os.path.realpath(f) for f in filenames]
+    oldfilepaths = filepaths
+    for oldfilepath in oldfilepaths:
+        dirname = os.path.dirname(oldfilepath)
+        oldfilename = os.path.basename(oldfilepath)
+        newfilename = transform(
+            oldfilename,
+            joinwith,
+            case,
+            replacements,
+            prefix=prefix,
+            suffix=suffix,
+            pre_remove=pre_remove,
+            post_remove=post_remove,
+        )
+        newfilepath = os.path.join(dirname, newfilename)
+        name_map[oldfilepath] = {
+            "dirname": dirname,
+            "oldfilename": oldfilename,
+            "newfilename": newfilename,
+            "newfilepath": newfilepath,
+        }
+    return name_map
+
+
+def rename_files(name_map: Dict[str, Dict]):
+    """Rename files according to the name_map."""
+    for key, val in name_map.items():
+        oldname, newname = val["oldfilename"], val["newfilename"]
+        print(f"{oldname} -> {newname}")
+        os.rename(key, val["newfilepath"])
+
+
+def print_newnames(name_map: Dict[str, Dict]):
+    """Print the new file names."""
+    for val in name_map.values():
+        oldname, newname = val["oldfilename"], val["newfilename"]
+        print(f"{oldname} -> {newname}")
+
+
+def create_shellscript(name_map: Dict[str, Dict], filepath: str):
+    """Write a shell script for renaming files."""
+    with open(filepath, mode="w", encoding="utf-8") as fout:
+        print("#!/bin/sh", end="\n\n", file=fout)
+        for oldpath, val in name_map.items():
+            newpath = val["newfilepath"]
+            print(f"mv '{oldpath}' '{newpath}'", file=fout)
+
+
+def main():
+    """Run when the module is executed as a script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-j", "--joiner", default="-", help="joiner string")
+    parser.add_argument(
+        "-c",
+        "--case",
+        default="lower",
+        choices=["lower", "upper", "title", "skip"],
+        help="lower, upper, title, or skip case",
+    )
+    parser.add_argument(
+        "-s", "--shell-script", help="output a shell script for renaming files"
+    )
+    parser.add_argument(
+        "--prefix", help="prefix to be added to each file name", type=str
+    )
+    parser.add_argument(
+        "--suffix", help="suffix to be added to each file name", type=str
+    )
+    parser.add_argument(
+        "--pre-remove",
+        help="regexp to remove substring from the original file name before doing the tansformation",
+        type=str,
+    )
+    parser.add_argument(
+        "--post-remove",
+        help="regexp to remove substring from the new file name",
+        type=str,
+    )
+    parser.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="rename the files",
+    )
+    args = parser.parse_args()
+    case = args.case.lower()
+    joiner = args.joiner
+    prefix = args.prefix
+    suffix = args.suffix
+    pre_remove = args.pre_remove
+    post_remove = args.post_remove
+
+    filenames = read_filenames()
+    name_map = generate_filenames(
+        filenames,
+        joiner,
+        case,
+        prefix=prefix,
+        suffix=suffix,
+        pre_remove=pre_remove,
+        post_remove=post_remove,
+    )
+    # print("\n\n")
+    # pprint(name_map)
+    # print("\n\n")
+    if args.yes:
+        rename_files(name_map)
+    elif args.shell_script:
+        create_shellscript(name_map, args.shell_script)
+        print(f"shell script created: {args.shell_script}")
+    else:
+        print_newnames(name_map)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,10 +1,7 @@
 #!/bin/sh
 
-#---------------------------------------------------------------------------
 
-wallpapers_dir="$(xdg-user-dir PICTURES)"/Wallpapers
-
-#---------------------------------------------------------------------------
+wallpapers_dir="$HOME/Pictures/Wallpapers"
 
 # rename all files in `wallpapers_dir` serially
 
@@ -28,4 +25,3 @@ do
     eval "$cmd_str"
 
 done
-

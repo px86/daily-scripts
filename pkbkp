@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+dox="$(xdg-user-dir DOCUMENTS)"
+file="$dox/backups/pacman-packages-$(date +'%F').txt"
+pacman -Qqei | awk '/^Name/ {gsub("^Name.*: ","");printf("%s ", $0)}; /^Description/ {gsub("^Description.*: ", "#- "); print}' | column -t -s'#' > "$file"

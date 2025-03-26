@@ -1,17 +1,19 @@
 #!/bin/sh
 
+# Wayland only
+
 # Creates a temporary Quick Response bar-code (QR Code) from the text
 # present in the system clipboard and opens the QR Code in image viewer.
 # When the image viewer window is closed, the QR Code is deleted.
 
-# Dependencies: xclip qrencode sxiv
+# Dependencies: wl-paste imv qrencode
 
 # TEXT can be plain text, of length permissible by the QR code, or more
 # commonly, a URL.
-TEXT=$(xclip -selection clipboard -o)
+TEXT=$(wl-paste --no-newline)
 
 TMP_FILE="/tmp/qrcode_$(date +'%s').png"
 
 qrencode --size 8 -o "$TMP_FILE" "$TEXT"
-sxiv -b "$TMP_FILE" # Open the QR code in image viewer
+imv-wayland -s shrink -w float-me -W 800 -H 600 "$TMP_FILE" # Open the QR code in image viewer
 rm -rf "$TMP_FILE"  # Delete the QR code

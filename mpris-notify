@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+################################################################################
+# TODO: add documentation
+#
+################################################################################
+
+read status player <  <(playerctl status -f '{{status}} {{playerName}}')
+[ -z "$status" ] && exit 1
+
+declare -a lines
+while IFS=$'\n' read line
+do
+    lines+=("$line")
+done < <(echo -e $(playerctl metadata -f '{{xesam:title}}\n{{xesam:album}}\n{{xesam:artist}}\n{{mpris:artUrl}}\n{{playerName}}'))
+
+title="${lines[0]/&/and}"
+album="${lines[1]/&/and}"
+artist="${lines[2]/&/and}"
+artUrl="${lines[3]}"
+player="${lines[4]}"
+
+coverArt="${artUrl##file://:-$HOME/Music/cover.png}"
+notify-send -e -h string:x-canonical-private-synchronous:anything \
+            -a "${player:-mpris-notify}" \
+            -i "${coverArt}" "${title}" "<span variant='smallcaps' foreground='#afafaf'>${album}\n</span>${artist}\n<span variant='smallcaps' foreground='#afafaf'>${status}</span>"

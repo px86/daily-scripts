@@ -1,0 +1,18 @@
+#!/usr/bin/env bb
+
+;; -*- clojure -*-
+
+
+(defn dir-size
+  "Get directory size in MB."
+  [path]
+  (as-> (io/file path) $
+    (file-seq $)
+    (map #(.length %) $)
+    (reduce + $)
+    (/ $ (* 1024 1024))
+    (println (str (int $) "M"))))
+
+
+(if (= *file* (System/getProperty "babashka.file"))
+  (dir-size (or (first *command-line-args*) ".")))

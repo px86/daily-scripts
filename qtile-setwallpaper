@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+import os
+import shutil
+
+from libqtile.command.client import InteractiveCommandClient
+
+WALLPAPER_PATH = os.path.expanduser("~/.local/data/wallpaper")
+
+client = InteractiveCommandClient()
+
+if not client.status() == "OK":
+    sys.exit()
+
+def set_wallpaper(screenindex: int, wallpaper: str, mode: str):
+    screen = client.screen[screenindex]
+    screen.set_wallpaper(wallpaper, mode)
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument(
+        "wallpaper",
+        type=str,
+        help="path to the image file",
+    )
+
+    ap.add_argument(
+        "--mode",
+        "-m",
+        choices=["fill", "center"],
+        default="fill",
+        help="wallpaper mode",
+    )
+
+    ap.add_argument(
+        "--persist",
+        "-p",
+        action="store_true",
+        help="persist the wallpaper through sessions",
+    )
+
+    args = ap.parse_args()
+
+    wallpaper = os.path.expanduser(args.wallpaper)
+    mode = args.mode
+
+    if args.persist:
+        shutil.copyfile(wallpaper, WALLPAPER_PATH)
+
+    for screen_info in client.get_screens():
+        index = screen_info["index"]
+        set_wallpaper(index, wallpaper, mode)

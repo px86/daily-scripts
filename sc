@@ -17,7 +17,7 @@ elif [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
 	exit 0
 fi
 
-[ -z $"BROWSER" ] || BROWSER='firefox'
+[ -n "$BROWSER" ] || BROWSER='firefox'
 
 option=$1
 shift 1
@@ -44,4 +44,3 @@ case $option in
 	*)
 	    exit 1 ;;
 esac
-

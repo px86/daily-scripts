@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+################################################################################
+# mpd-notify publishes a notification with the details of the song being
+# played by 'mpd'.
+#
+# It pings 'mpd' using 'mpc' to get the song details and then looks for a
+# cover art in the same folder as the music file. If it does not find the
+# cover art, it tries to extract it from the music file using 'ffmpeg' and
+# save it to the folder.
+#
+################################################################################
+
+musicDir="$(xdg-user-dir MUSIC)"
+coverArtDefault="$musicDir"/cover.png
+
+declare -a lines
+while read -r line
+do
+    lines+=("$line")
+done < <(mpc current -f "%file%\n%title%\n%album%\n%artist%")
+
+file="$musicDir/${lines[0]}"
+# if the music file does not exist, exit immediately
+[ -f "$file" ] || exit 1
+
+title="${lines[1]}"
+album="${lines[2]}"
+artist="${lines[3]}"
+folder=$(dirname "$file")
+status=$(mpc status "%state%")
+
+extract_cover ()
+{
+    [ $# -eq 0 ] && return
+    ffmpeg -y -i "$1" -an -vf "crop=w='min(iw\,ih)':h='min(iw\,ih)',scale=500:500,setsar=1" \
+           -vframes 1 "$2"
+}
+
+# loop through possible cover files
+declare -a coverFiles=("cover.png" "cover.jpg" "cover.jpeg" "cover" ".cover")
+for coverFile in ${coverFiles[*]}; do
+    cvr="$folder/$coverFile"
+    if [ -f "$cvr" ]; then
+        coverArt="$cvr"
+        break;
+    fi
+done
+
+[ -z "$coverArt" ] && extract_cover "$file" "$folder/cover.png"
+[ -f "$folder/cover.png" ] && coverArt="$folder/cover.png"
+
+notify-send -h string:x-canonical-private-synchronous:anything \
+            -a "mpd" \
+            -i "${coverArt:-$coverArtDefault}" \
+            "${title}" \
+            "<span variant='smallcaps' foreground='#afafaf'>${album}\n</span>${artist}\n<span variant='smallcaps' foreground='#afafaf'>${status}</span>"

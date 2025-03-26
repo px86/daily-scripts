@@ -15,7 +15,10 @@ fi
 
 cd ~
 
-remote_ip=$(/sbin/arp | fzf --height=15 --reverse --tac | cut -d' ' -f1)
+remote_ip=$(ip -br neigh show | cut -d' ' -f1 \
+		| fzf --height=15 \
+		     --layout=reverse \
+		     --prompt="Connect with ssh > ")
 
 if [ -z "$remote_ip" ]
 then

@@ -1,23 +1,36 @@
 #!/bin/sh
 
 # Dependencies:
-# 1. maim  - the program that captures screensots
-# 2. dunst - notification program
+# 1. grim  - the program that captures screensots
+# 2. slurp - the program that selectes screen area
+# 3. A notification program
 
-screenshots_dir="$HOME"/Pictures/Screenshots
-file_name=$(date +"%s").png
-icon="$XDG_CONFIG_HOME"/dunst/icons/screenshot.png
+screenshotsDir="$(xdg-user-dir PICTURES)/screenshots"
 
-if ! [ -d "$screenshots_dir" ]
+if ! [ -d "$screenshotsDir" ]
 then
-    mkdir -p $screenshots_dir || screenshot_dir="$HOME"
+    mkdir -p "$screenshotsDir" || screenshotsDir="$HOME"
 fi
 
-if [ "$1" = "-s" ]
+fileName=$(date +"%s").png
+filePath="$screenshotsDir"/"$fileName"
+
+if [ "$1" = "--selection" ]
 then
-    maim -u -s "$screenshots_dir/$file_name"
+    grim -l0 -g "$(slurp)" "$filePath"
 else
-    maim -u "$screenshots_dir/$file_name"
+    grim -l0 "$filePath"
 fi
 
-dunstify -i $icon "Screenshot Taken" &
+# copy image to clipboard
+wl-copy < "$filePath"
+
+action=$(notify-send "Screenshot Saved" "as $fileName and copied to clipboard" \
+                     --app-name="Screenshot" --icon="camera" \
+		     --action "default=Open screenshot in image viewer")
+
+case "$action" in
+    "default")
+	imv -s shrink "$filePath" &
+	;;
+esac

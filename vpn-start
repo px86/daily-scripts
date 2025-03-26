@@ -1,0 +1,36 @@
+#!/bin/sh
+
+ovpnProfilesDir="$HOME/.local/data/openvpn-profiles/"
+ovpnPidFile="$HOME/.cache/openvpn.pid"
+
+if [ -f "$ovpnPidFile" ]; then
+    printf "Another instance of openvpn seems to be running via 'vpn-start'\n"
+    printf "Run 'vpn-stop' and try again.\n"
+    exit 1
+fi
+
+cd "$ovpnProfilesDir" || exit 1
+
+profile=$(ls *.ovpn | fzf --layout=reverse \
+			  --scheme=path \
+			  --prompt="Select OpenVPN client config > ")
+
+[ -z "$profile" ] && exit 1
+
+profile=$(realpath "$profile")
+
+[ -f "$profile" ] || exit 1
+
+sudo openvpn \
+     --cd "$HOME" \
+     --config "$profile" \
+     --writepid "$ovpnPidFile" \
+     --auth-nocache \
+     --daemon
+
+sleep 2s
+
+if [ -f "$ovpnPidFile" ]; then
+    pid=$(cat "$ovpnPidFile")
+    printf "OpenVPN PID: %s\n" $pid
+fi

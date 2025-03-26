@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+print_usage ()
+{
+    echo "Usage: opuscropcvr [OPTION...] <FILE>"
+    echo ""
+    echo "Options:"
+    echo "  -c           copy the cover to the directory containing <FILE>"
+    echo ""
+    echo "opuscropcvr takes one opus file as argument, extracts and crops its cover art"
+    echo "using 'ffmpeg' and replaes it in place using 'opustags'."
+}
+
+if [ $# -eq 0 ]; then
+    print_usage
+    exit 1
+fi
+
+extract_cover ()
+{
+    [ $# -eq 0 ] && return
+    ffmpeg -y -i "$1" -an -vf "crop=w='min(iw\,ih)':h='min(iw\,ih)',scale=500:500,setsar=1" \
+           -vframes 1 "$2"
+}
+
+file="$1"
+rmCover=0
+
+case "$1" in
+    "" | "-h" | "--help")
+        print_usage
+        exit 0
+        ;;
+    "-c")
+        file="$2"
+        if ! [ -f "$file" ]; then
+            print_usage
+            exit 1
+        fi
+        cover="$(dirname "$file")/cover.png"
+        rmCover=0
+        ;;
+    *)
+        file="$1"
+        cover=$(mktemp opuscropcvr.XXXXXXXXXX.png)
+        rmCover=1
+        ;;
+esac
+
+extract_cover "$file" "$cover"
+if [ $? -eq 0 ]; then
+    opustags --in-place --set-cover "$cover" "$file"
+    [ $rmCover -eq 1 ] && rm "$cover"
+    exit 0
+fi
+
+[ $rmCover -eq 1 ] && rm "$cover"
+
+exit 1
